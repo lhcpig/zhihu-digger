@@ -78,12 +78,20 @@ public class WebMain {
         String href = questionA.attr("href");
         String question = questionA.text();
         Element author = div.getElementsByClass("zm-item-answer-author-wrap").get(0);
-        String authorName = author.child(1).text();
-        boolean createAnswer = actor.equals(authorName);
-        String actionStr = createAnswer ? "回答了" : "赞同了";
+        String title, authorName;
+        if (author.children().size() <= 1) {//开启了隐私限制，无法判断是赞同还是回答
+            authorName = "知乎用户";
+            title = question;
+        } else {
+            authorName = author.child(1).text();
+            boolean createAnswer = actor.equals(authorName);
+            String actionStr = createAnswer ? "回答了" : "赞同了";
+            title = actor + actionStr + question;
+        }
+
         String answer = div.select(".zm-item-rich-text .content").get(0).text();
         String content = "<h1><a href='http://www.zhihu.com" + href + "'>" + question + "</a></h1>" + authorName + "<br />" + answer;
-        return MailManager.createMail(actor + actionStr + question, content);
+        return MailManager.createMail(title, content);
     }
 
     private static String getActor() throws IOException {

@@ -29,7 +29,7 @@ public class MailManager {
 
         //有了这句便可以在发送邮件的过程中在console处显示过程信息，供调试使
         //用（你可以在控制台（console)上看到发送邮件的过程）
-        session.setDebug(true);
+        session.setDebug(false);
 
         //用session为参数定义消息对象
         MimeMessage message = new MimeMessage(session);
