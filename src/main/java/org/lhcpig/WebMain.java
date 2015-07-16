@@ -10,6 +10,7 @@ import org.jsoup.nodes.Element;
 
 import javax.mail.MessagingException;
 import java.io.IOException;
+import java.time.Instant;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -23,6 +24,7 @@ public class WebMain {
 
     public static void main(String[] args) throws IOException {
         actor = getActor();
+        System.out.println("start zhihu monitor:" + actor);
         Timer timer = new Timer();
         timer.schedule(task, 0, 10 * 60 * 1000);
     }
@@ -66,8 +68,8 @@ public class WebMain {
                 if (currentNewest.isPresent()) {
                     newestActivityTime = currentNewest.get();
                 }
-
             }
+            System.out.println("finish this task:" + Instant.now());
         }
     };
 
