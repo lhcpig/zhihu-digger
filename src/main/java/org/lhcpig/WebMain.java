@@ -7,6 +7,7 @@ import org.jsoup.Connection;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
+import org.jsoup.select.Elements;
 
 import javax.mail.MessagingException;
 import java.io.IOException;
@@ -37,6 +38,7 @@ public class WebMain {
                 } catch (Exception e) {
                     e.printStackTrace();
                 }
+                System.out.println("finish this task:" + Instant.now());
             }
         }
     };
@@ -44,7 +46,7 @@ public class WebMain {
     private static void monitor(Person person) {
         String jsonResult;
         try {
-            jsonResult = Jsoup.connect("http://www.zhihu.com/people/" + ConfigManager.getPeople() + "/activities")
+            jsonResult = Jsoup.connect("http://www.zhihu.com/people/" + person.name + "/activities")
                     .ignoreContentType(true)
                     .method(Connection.Method.POST)
                     .execute()
@@ -79,7 +81,6 @@ public class WebMain {
                 person.newestUpdateTime = currentNewest.get();
             }
         }
-        System.out.println("finish this task:" + Instant.now());
     }
 
     private static Mail buildMail(Element div, Person person) {
@@ -115,7 +116,11 @@ public class WebMain {
         } catch (IOException e) {
             return null;
         }
-        return document.getElementsByClass("name").get(0).text();
+        Elements name = document.getElementsByClass("name");
+        if (name.isEmpty()) {
+            return "unkown";
+        }
+        return name.get(0).text();
     }
 
     private static class Person {
