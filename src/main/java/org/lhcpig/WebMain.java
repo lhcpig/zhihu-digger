@@ -19,12 +19,11 @@ import java.util.stream.Collectors;
  */
 public class WebMain {
 
-    public static String actor = "";
-    public static long newestActivityTime = System.currentTimeMillis();
+    public static List<Person> actors = Collections.emptyList();
 
     public static void main(String[] args) throws IOException {
-        actor = getActor();
-        System.out.println("start zhihu monitor:" + actor);
+        actors = getActors();
+        System.out.println("start zhihu monitor:" + actors);
         Timer timer = new Timer();
         timer.schedule(task, 0, 10 * 60 * 1000);
     }
@@ -32,48 +31,58 @@ public class WebMain {
     private static TimerTask task = new TimerTask() {
         @Override
         public void run() {
-            String jsonResult;
-            try {
-                jsonResult = Jsoup.connect("http://www.zhihu.com/people/" + ConfigManager.getPeople() + "/activities")
-                        .ignoreContentType(true)
-                        .method(Connection.Method.POST)
-                        .execute()
-                        .body();
-            } catch (IOException e) {
-                e.printStackTrace();
-                return;
-            }
-            JsonObject result = new JsonParser().parse(jsonResult).getAsJsonObject();
-            if (result.get("r").getAsInt() == 0) {
-                JsonElement msg = result.getAsJsonArray("msg").get(1);
-                Element parse = Jsoup.parse(msg.getAsString()).body();
-                List<Element> divs = parse.children()
-                        .stream()
-                        .filter(div -> "a".equals(div.attr("data-type")))
-                        .filter(div -> div.hasAttr("data-time"))
-                        .collect(Collectors.toList());
-
-                divs.stream().filter(div -> (Long.parseLong(div.attr("data-time")) * 1000) > newestActivityTime)
-                        .forEach(div -> {
-                            Mail mail = buildMail(div);
-                            try {
-                                MailManager.sendMail(mail);
-                            } catch (MessagingException e) {
-                                System.out.println("fail send mail");
-                            }
-                        });
-                Optional<Long> currentNewest = divs.stream()
-                        .map(div -> Long.parseLong(div.attr("data-time")) * 1000)
-                        .max(Comparator.<Long>naturalOrder());
-                if (currentNewest.isPresent()) {
-                    newestActivityTime = currentNewest.get();
+            for (Person person : actors) {
+                try {
+                    monitor(person);
+                } catch (Exception e) {
+                    e.printStackTrace();
                 }
             }
-            System.out.println("finish this task:" + Instant.now());
         }
     };
 
-    private static Mail buildMail(Element div) {
+    private static void monitor(Person person) {
+        String jsonResult;
+        try {
+            jsonResult = Jsoup.connect("http://www.zhihu.com/people/" + ConfigManager.getPeople() + "/activities")
+                    .ignoreContentType(true)
+                    .method(Connection.Method.POST)
+                    .execute()
+                    .body();
+        } catch (IOException e) {
+            e.printStackTrace();
+            return;
+        }
+        JsonObject result = new JsonParser().parse(jsonResult).getAsJsonObject();
+        if (result.get("r").getAsInt() == 0) {
+            JsonElement msg = result.getAsJsonArray("msg").get(1);
+            Element parse = Jsoup.parse(msg.getAsString()).body();
+            List<Element> divs = parse.children()
+                    .stream()
+                    .filter(div -> "a".equals(div.attr("data-type")))
+                    .filter(div -> div.hasAttr("data-time"))
+                    .collect(Collectors.toList());
+
+            divs.stream().filter(div -> (Long.parseLong(div.attr("data-time")) * 1000) > person.newestUpdateTime)
+                    .forEach(div -> {
+                        Mail mail = buildMail(div, person);
+                        try {
+                            MailManager.sendMail(mail);
+                        } catch (MessagingException e) {
+                            System.out.println("fail send mail");
+                        }
+                    });
+            Optional<Long> currentNewest = divs.stream()
+                    .map(div -> Long.parseLong(div.attr("data-time")) * 1000)
+                    .max(Comparator.<Long>naturalOrder());
+            if (currentNewest.isPresent()) {
+                person.newestUpdateTime = currentNewest.get();
+            }
+        }
+        System.out.println("finish this task:" + Instant.now());
+    }
+
+    private static Mail buildMail(Element div, Person person) {
         Element questionA = div.getElementsByClass("question_link").get(0);
         String href = questionA.attr("href");
         String question = questionA.text();
@@ -84,9 +93,9 @@ public class WebMain {
             title = question;
         } else {
             authorName = author.child(1).text();
-            boolean createAnswer = actor.equals(authorName);
+            boolean createAnswer = person.nickName.equals(authorName);
             String actionStr = createAnswer ? "回答了" : "赞同了";
-            title = actor + actionStr + question;
+            title = person.nickName + actionStr + question;
         }
 
         String answer = div.select(".zm-item-rich-text .content").get(0).text();
@@ -94,8 +103,30 @@ public class WebMain {
         return MailManager.createMail(title, content);
     }
 
-    private static String getActor() throws IOException {
-        Document document = Jsoup.connect("http://www.zhihu.com/people/" + ConfigManager.getPeople()).get();
+    private static List<Person> getActors() throws IOException {
+        List<String> people = ConfigManager.getPeople();
+        return people.stream().map(s -> new Person(s, System.currentTimeMillis(), getActor(s))).filter(p -> p.nickName != null).collect(Collectors.toList());
+    }
+
+    public static String getActor(String person) {
+        Document document;
+        try {
+            document = Jsoup.connect("http://www.zhihu.com/people/" + person).get();
+        } catch (IOException e) {
+            return null;
+        }
         return document.getElementsByClass("name").get(0).text();
+    }
+
+    private static class Person {
+        String name;
+        String nickName;
+        long newestUpdateTime;
+
+        public Person(String name, long newestUpdateTime, String nickName) {
+            this.name = name;
+            this.newestUpdateTime = newestUpdateTime;
+            this.nickName = nickName;
+        }
     }
 }

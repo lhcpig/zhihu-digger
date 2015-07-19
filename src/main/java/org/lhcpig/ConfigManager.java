@@ -19,9 +19,10 @@ public class ConfigManager {
         }
     }
 
-    public static String getPeople() {
-        return p.getProperty("people");
+    public static List<String> getPeople() {
+        return Arrays.asList(p.getProperty("people").split("[ ,;]"));
     }
+
 
     public static String getHost() {
         return p.getProperty("host");
