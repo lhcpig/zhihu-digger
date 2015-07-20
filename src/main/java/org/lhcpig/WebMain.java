@@ -134,5 +134,14 @@ public class WebMain {
             this.newestUpdateTime = newestUpdateTime;
             this.nickName = nickName;
         }
+
+        @Override
+        public String toString() {
+            return "Person{" +
+                    "name='" + name + '\'' +
+                    ", nickName='" + nickName + '\'' +
+                    ", newestUpdateTime=" + newestUpdateTime +
+                    '}';
+        }
     }
 }
