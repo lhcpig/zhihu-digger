@@ -72,6 +72,7 @@ public class WebMain {
                             MailManager.sendMail(mail);
                         } catch (MessagingException e) {
                             System.out.println("fail send mail");
+                            e.printStackTrace();
                         }
                     });
             Optional<Long> currentNewest = divs.stream()
