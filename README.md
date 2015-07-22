@@ -10,11 +10,15 @@ Requires JDK 1.8 or higher
 用这个zhihu-digger，当Ta有心动态时，就会发邮件给自己。
 
 #使用步骤
-修改src/main/resources/config.properties文件，填写下面几个参数：
-- people 关心的人名称，支持多人(用逗号隔开)，比如 "zhouyuan,lhcpig"
-- host 发信服务器，比如126邮箱的是"smtp.126.com"
-- fromAddress 发信邮箱的地址
-- fromPassword 发信邮箱的密码
-- toAddressList 收信邮箱地址，支持多个收信邮箱，比如"user1@example.com,user2@example.com"
+1. 修改src/main/resources/config.properties文件，填写下面几个参数：
+  + people 关心的人名称，支持多人(用逗号隔开)，比如 "zhouyuan,lhcpig"
+  + host 发信服务器，比如126邮箱的是"smtp.126.com"
+  + fromAddress 发信邮箱的地址
+  + fromPassword 发信邮箱的密码
+  + toAddressList 收信邮箱地址，支持多个收信邮箱，比如 "user1@example.com,user2@example.com"
+2. mvn 打包: `mvn package`。打包生成`zhihu-digger.jar`文件，默认在target目录下。
+3. 执行`java -jar zhihu-digger.jar`，完毕。
+
+
 
 
