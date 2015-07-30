@@ -1,22 +1,54 @@
 package org.lhcpig;
 
+import com.google.common.eventbus.EventBus;
+import com.google.common.eventbus.Subscribe;
+
 import javax.mail.*;
 import javax.mail.internet.InternetAddress;
 import javax.mail.internet.MimeBodyPart;
 import javax.mail.internet.MimeMessage;
 import javax.mail.internet.MimeMultipart;
 import java.util.Properties;
+import java.util.Timer;
+import java.util.TimerTask;
 
 /**
  * Created by lhcpig on 2015/7/16.
  */
 public class MailManager {
+    public static final MailManager instance = new MailManager();
 
-    public static Mail createMail(String subject, String content) {
-        return new Mail(subject, content, ConfigManager.getHost(), ConfigManager.getFromAddress(), ConfigManager.getFromPassword(), ConfigManager.getToAddressList());
+    private final EventBus eventBus = new EventBus();
+
+    private MailManager() {
+        eventBus.register(new Object() {
+            @Subscribe
+            public void handle(Mail mail) {
+                try {
+                    sendMail(mail);
+                } catch (MessagingException e) {
+                    e.printStackTrace();
+                    sendMailAfterDelay(mail, 1000 * 10);
+                }
+            }
+
+            private void sendMailAfterDelay(Mail mail, long delay) {
+                new Timer().schedule(new TimerTask() {
+                    @Override
+                    public void run() {
+                        handle(mail);
+                    }
+                }, delay);
+            }
+        });
     }
 
-    public static void sendMail(Mail mail) throws MessagingException {
+
+    public void send(String subject, String content) {
+        eventBus.post(new Mail(subject, content, ConfigManager.getHost(), ConfigManager.getFromAddress(), ConfigManager.getFromPassword(), ConfigManager.getToAddressList()));
+    }
+
+    private void sendMail(Mail mail) throws MessagingException {
         Properties props = new Properties();
 
         //设置发送邮件的邮件服务器的属性（这里使用网易的smtp服务器）

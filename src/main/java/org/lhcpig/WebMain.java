@@ -9,7 +9,6 @@ import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
 import org.jsoup.select.Elements;
 
-import javax.mail.MessagingException;
 import java.io.IOException;
 import java.time.Instant;
 import java.util.*;
@@ -44,15 +43,8 @@ public class WebMain {
     };
 
     private static void monitor(Person person) {
-        String jsonResult;
-        try {
-            jsonResult = Jsoup.connect("http://www.zhihu.com/people/" + person.name + "/activities")
-                    .ignoreContentType(true)
-                    .method(Connection.Method.POST)
-                    .execute()
-                    .body();
-        } catch (IOException e) {
-            e.printStackTrace();
+        String jsonResult = getActivities(person);
+        if (jsonResult == null) {
             return;
         }
         JsonObject result = new JsonParser().parse(jsonResult).getAsJsonObject();
@@ -66,15 +58,8 @@ public class WebMain {
                     .collect(Collectors.toList());
 
             divs.stream().filter(div -> (Long.parseLong(div.attr("data-time")) * 1000) > person.newestUpdateTime)
-                    .forEach(div -> {
-                        Mail mail = buildMail(div, person);
-                        try {
-                            MailManager.sendMail(mail);
-                        } catch (MessagingException e) {
-                            System.out.println("fail send mail");
-                            e.printStackTrace();
-                        }
-                    });
+                    .forEach(div -> sendMail(div, person));
+
             Optional<Long> currentNewest = divs.stream()
                     .map(div -> Long.parseLong(div.attr("data-time")) * 1000)
                     .max(Comparator.<Long>naturalOrder());
@@ -84,7 +69,22 @@ public class WebMain {
         }
     }
 
-    private static Mail buildMail(Element div, Person person) {
+    private static String getActivities(Person person) {
+        for (int i = 0; i < 3; i++) {
+            try {
+                return Jsoup.connect("http://www.zhihu.com/people/" + person.name + "/activities")
+                        .ignoreContentType(true)
+                        .method(Connection.Method.POST)
+                        .execute()
+                        .body();
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
+        return null;
+    }
+
+    private static void sendMail(Element div, Person person) {
         Element questionA = div.getElementsByClass("question_link").get(0);
         String href = questionA.attr("href");
         String question = questionA.text();
@@ -101,8 +101,8 @@ public class WebMain {
         }
 
         String answer = div.select(".zm-item-rich-text .content").get(0).text();
-        String content = "<h1><a href='http://www.zhihu.com" + href + "'>" + question + "</a></h1>" + authorName + "<br />" + answer;
-        return MailManager.createMail(title, content);
+        String content = "<h5><a href='http://www.zhihu.com" + href + "'>" + question + "</a></h5>" + authorName + "<br />" + answer;
+        MailManager.instance.send(title, content);
     }
 
     private static List<Person> getActors() throws IOException {
