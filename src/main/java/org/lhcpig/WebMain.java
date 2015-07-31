@@ -92,7 +92,7 @@ public class WebMain {
         String question = questionA.text();
         Element author = div.getElementsByClass("zm-item-answer-author-wrap").get(0);
         String authorName;
-        if (title.split(" ")[1].equals("回答了")) {
+        if (title.split(" ")[1].startsWith("回答了")) {
             authorName = person.nickName;
         } else {
             if (author.children().size() <= 1) {//开启了隐私限制，无法判断是赞同还是回答
