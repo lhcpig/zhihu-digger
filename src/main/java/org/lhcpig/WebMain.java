@@ -25,7 +25,7 @@ public class WebMain {
         actors = getActors();
         System.out.println("start zhihu monitor:" + actors);
         Timer timer = new Timer();
-        timer.schedule(task, 0, 10 * 60 * 1000);
+        timer.schedule(task, 0, 60 * 1000);
     }
 
     private static TimerTask task = new TimerTask() {
@@ -85,23 +85,24 @@ public class WebMain {
     }
 
     private static void sendMail(Element div, Person person) {
+        Elements titleDivs = div.getElementsByClass("zm-profile-activity-page-item-main");
+        String title = titleDivs.get(0).text();
         Element questionA = div.getElementsByClass("question_link").get(0);
         String href = questionA.attr("href");
         String question = questionA.text();
         Element author = div.getElementsByClass("zm-item-answer-author-wrap").get(0);
-        String title, authorName;
-        if (author.children().size() <= 1) {//开启了隐私限制，无法判断是赞同还是回答
-            authorName = "知乎用户";
-            title = question;
+        String authorName;
+        if (title.split(" ")[1].equals("回答了")) {
+            authorName = person.nickName;
         } else {
-            authorName = author.child(1).text();
-            boolean createAnswer = person.nickName.equals(authorName);
-            String actionStr = createAnswer ? "回答了" : "赞同了";
-            title = person.nickName + actionStr + question;
+            if (author.children().size() <= 1) {//开启了隐私限制，无法判断是赞同还是回答
+                authorName = "知乎用户";
+            } else {
+                authorName = author.child(1).text();
+            }
         }
-
         String answer = div.select(".zm-item-rich-text .content").get(0).text();
-        String content = "<h5><a href='http://www.zhihu.com" + href + "'>" + question + "</a></h5>" + authorName + "<br />" + answer;
+        String content = "<h4><a href='http://www.zhihu.com" + href + "'>" + question + "</a></h4>" + authorName + "<br />" + answer;
         MailManager.instance.send(title, content);
     }
 
