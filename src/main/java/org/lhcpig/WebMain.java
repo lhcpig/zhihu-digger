@@ -87,6 +87,9 @@ public class WebMain {
     private static void sendMail(Element div, Person person) {
         Elements titleDivs = div.getElementsByClass("zm-profile-activity-page-item-main");
         String title = titleDivs.get(0).text();
+        if (title.startsWith("知乎用户")) {
+            title = title.replaceFirst("知乎用户", person.nickName);
+        }
         Element questionA = div.getElementsByClass("question_link").get(0);
         String href = questionA.attr("href");
         String question = questionA.text();
