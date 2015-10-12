@@ -19,7 +19,7 @@ Requires JDK 1.8 or higher
 2. mvn 打包: `mvn package`。打包生成`zhihu-digger.jar`文件，默认在target目录下。
 3. 执行`java -jar zhihu-digger.jar`，完毕。
 
-#注
+##注
 因为只是一个工具，所以代码写的比较随意，见谅
 
 
